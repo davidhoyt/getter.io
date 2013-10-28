@@ -1,0 +1,28 @@
+
+.nav, .pagination, .carousel a { cursor: pointer; }
+
+body {
+  margin: 0px 30px 0px 30px;
+  /* font-size: 10pt; */
+  /* font-family: "Trebuchet MS", Helvetica, Tahoma, Verdana; */
+}
+
+.banner {
+  position: fixed;
+  margin: auto;
+  z-index: 100000;
+  top: 0px;
+  left: 0px;
+  height: 20px;
+  width: 100%;
+  padding: 10px 10px 10px 10px;
+  background-color: #626262;
+  color: white;
+  border-bottom: 1px solid #cccccc;
+  font-size: 16pt;
+  font-family: "Trebuchet MS", Helvetica, Tahoma, Verdana;
+}
+
+.content {
+  margin-top: 70px;
+}
