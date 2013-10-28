@@ -1,111 +1,48 @@
 @()
 
 @main("getter.io") {
+
+} {
   <div ng-controller="AdminController">
+    <alert ng-repeat="alert in alerts" type="alert.type" close="closeAlert($index)" class="alert fade in">{{alert.msg}}</alert>
+    <div style="position: relative; float: right; padding-right: 20px;">
+      <span class="label label-warning" ng-show="anyUnsavedChanges()">You have unsaved changes</span>
+      <button class="btn btn-small btn-success" ng-disabled="! anyUnsavedChanges()" ng-click="saveSettings()">
+        Save Settings
+      </button>
+      <button class="btn btn-small" ng-disabled="! anyUnsavedChanges()" ng-click="undoChanges()">
+        Undo Changes
+      </button>
+    </div>
     <tabset>
-      <tab heading="Repositories">
-        <div ng-repeat="repo in repositories">
-          <div>
-            <table border="0" cellspacing="1" cellpadding="0">
-              <tr>
-                <td>Server Path:</td>
-                <td>
-                  <input type="text" ng-model="repo.serverPrefix" /><br />
-                </td>
-              </tr>
-              <tr>
-                <td>GIT Clone URL:</td>
-                <td>
-                  <input type="text" ng-model="repo.cloneURL" />
-                </td>
-              </tr>
-            </table>
-            <br />
-          </div>
-        </div>
-        <button class="btn" ng-click="addRepository()">Clone Additional</button>
+      <tab heading="Git Repositories">
+        <button class="btn btn-small" ng-click="addRepository()">Add Another Repository</button>
+        <br /><br />
+        <table class="table table-striped">
+          <tr ng-repeat="repo in working.git.repositories">
+            <td>
+              <label>Server path:</label>
+              <input type="text" ng-model="repo.serverPrefix" />
+            </td>
+            <td>
+              <label>Git clone URL:</label>
+              <input type="text" ng-model="repo.cloneURL" />
+            </td>
+            <td width="100%" align="right" style="vertical-align: middle;">
+              <div style="position: relative; float: right; padding-right: 20px;">
+                <button class="btn btn-small btn-info" ng-click="updateGitRepository(repo)">Update Now</button>
+                <button class="btn btn-small btn-info" ng-click="clearGitRepository(repo)">Clear</button>
+                <button class="btn btn-small btn-danger" ng-click="deleteGitRepository(repo)">Delete</button>
+              </div>
+
+            </td>
+          </tr>
+        </table>
       </tab>
-      <tab heading="Placement">
-        Root Directory: <input type="text" ng-model="rootDirectory" />
+      <tab heading="Server">
+        <label>Root directory:</label>
+        <input type="text" ng-model="working.contentDir" />
       </tab>
     </tabset>
   </div>
-<!--
-    <div ng-controller="ModalDemoCtrl">
-        <script type="text/ng-template" id="myModalContent.html">
-            <div class="modal-header">
-                <h3>I'm a modal!</h3>
-            </div>
-            <div class="modal-body">
-                <ul>
-                    <li ng-repeat="item in items">
-                        <a ng-click="selected.item = item">{{ item }}</a>
-                    </li>
-                </ul>
-                Selected: <b>{{ selected.item }}</b>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" ng-click="ok()">OK</button>
-                <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
-            </div>
-        </script>
-
-        <button class="btn" ng-click="open()">Open me!</button>
-        <div ng-show="selected">Selection from a modal: {{ selected }}</div>
-    </div>
-
-    <div ng-controller="ButtonsCtrl">
-        <h4>Single toggle</h4>
-        <pre>{{singleModel}}</pre>
-        <button type="button" class="btn btn-primary" ng-model="singleModel" btn-checkbox btn-checkbox-true="1" btn-checkbox-false="0">
-            Single Toggle
-        </button>
-        <h4>Checkbox</h4>
-        <pre>{{checkModel}}</pre>
-        <div class="btn-group">
-            <button type="button" class="btn btn-primary" ng-model="checkModel.left" btn-checkbox>Left</button>
-            <button type="button" class="btn btn-primary" ng-model="checkModel.middle" btn-checkbox>Middle</button>
-            <button type="button" class="btn btn-primary" ng-model="checkModel.right" btn-checkbox>Right</button>
-        </div>
-        <h4>Radio</h4>
-        <pre>{{radioModel}}</pre>
-        <div class="btn-group">
-            <button type="button" class="btn btn-primary" ng-model="radioModel" btn-radio="'Left'">Left</button>
-            <button type="button" class="btn btn-primary" ng-model="radioModel" btn-radio="'Middle'">Middle</button>
-            <button type="button" class="btn btn-primary" ng-model="radioModel" btn-radio="'Right'">Right</button>
-        </div>
-    </div>
-
-    <div ng-controller="AlertDemoCtrl">
-        <alert ng-repeat="alert in alerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
-        <button class='btn' ng-click="addAlert()">Add Alert</button>
-    </div>
-
-    <div ng-controller="AccordionDemoCtrl">
-        <label class="checkbox">
-            <input type="checkbox" ng-model="oneAtATime">
-            Open only one at a time
-        </label>
-
-        <accordion close-others="oneAtATime">
-            <accordion-group heading="Static Header">
-                This content is straight in the template.
-            </accordion-group>
-            <accordion-group heading="{{group.title}}" ng-repeat="group in groups">
-                {{group.content}}
-            </accordion-group>
-            <accordion-group heading="Dynamic Body Content">
-                <p>The body of the accordion group grows to fit the contents</p>
-                <button class="btn btn-small" ng-click="addItem()">Add Item</button>
-                <div ng-repeat="item in items">{{item}}</div>
-            </accordion-group>
-            <accordion-group>
-                <accordion-heading>
-                    I can have markup, too! <i class="icon-check"></i>
-                </accordion-heading>
-                This is just some content to illustrate fancy headings.
-            </accordion-group>
-        </accordion>
-    </div>
--->
 }

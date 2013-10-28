@@ -1,45 +1,141 @@
 
-var config = new function() {
-  this.debug = function() {
-    return true;
-  };
+var config = {
+  debug: true,
 
-  this.adminSettingsURI = function() {
-    return "/admin/settings";
-  };
-
-  this.log = function(msg) {
-    if (this.debug() && !(typeof(console) === 'undefined'))
+  adminSettingsURI: function() {
+    return "/admin/v1/settings";
+  },
+  updateGitRepositoryURI: function() {
+    return "/admin/v1/update"
+  },
+  clearGitRepositoryURI: function() {
+    return "/admin/v1/clear"
+  },
+  log: function(msg) {
+    if (this.debug && !(typeof(console) === 'undefined'))
       console.log(msg);
-  };
+  }
 };
+
+
 
 var getter_io = angular.module('getter-io', ['ui.bootstrap']);
 
+getter_io.controller('AppController', ['$scope', '$http', '$timeout', function($scope, $http, $timeout) {
 
+}]);
 
 getter_io.controller('AdminController', ['$scope', '$http', '$timeout', function($scope, $http, $timeout) {
-  $scope.addRepository = function() {
-    alert('hi');
+  $scope.alerts = [];
+
+  $scope.original = $scope.working = {
+    rootDirectory: '',
+    git: {
+      repositories: []
+    }
   };
 
-  $scope.repositories = [
-    {
-      "serverPrefix": "/foo",
-      "cloneURL": "http://google.com/"
-    },
-    {
-      "serverPrefix": "/bar",
-      "cloneURL": "http://yahoo.com/"
+  $scope.anyUnsavedChanges = function() {
+    if (typeof($scope.working) === 'undefined' || typeof($scope.original) === 'undefined')
+      return false;
+    var result = !angular.equals($scope.working, $scope.original);
+    //config.log("Checking for unsaved changes...");
+    return result;
+  };
+
+  $scope.undoChanges = function() {
+    $scope.working = angular.copy($scope.original);
+  };
+
+  $scope.addAlert = function(success, msg, timeout) {
+    var alert = { type: (success ? 'success' : 'error'), msg: msg };
+
+    $scope.alerts.push(alert);
+
+    if (timeout) {
+      $timeout(function() {
+        $scope.closeAlert($scope.alerts.indexOf(alert));
+      }, timeout);
     }
-  ];
+  };
+
+  $scope.closeAlert = function(index) {
+    $scope.alerts.splice(index, 1);
+  };
+
+  $scope.createEmptyGitRepositoryInstance = function() {
+    return {
+      serverPrefix: '/',
+      cloneURL: ''
+    };
+  };
+
+  $scope.addRepository = function() {
+    $scope.working.git.repositories.push($scope.createEmptyGitRepositoryInstance());
+  };
+
+  $scope.updateGitRepository = function(repo) {
+    var prefix = repo.serverPrefix;
+    var data = { serverPrefix: prefix };
+
+    config.log("POSTing the following to " + config.updateGitRepositoryURI());
+    config.log(data);
+
+    $http({
+      url: config.updateGitRepositoryURI(),
+      method: 'POST',
+      data: data,
+      headers: {'Content-type': 'application/json'}
+    })
+    .success(function(data, status, headers, conf) {
+      config.log(data);
+      $scope.addAlert(true, prefix + " has been updated successfully", 10 * 1000);
+    })
+    .error(function(data, status, headers, conf) {
+      config.log(data);
+      $scope.addAlert(false, prefix + " was unable to be updated successfully: " + data.message, 10 * 1000);
+    });
+  };
+
+  $scope.deleteGitRepository = function(repo) {
+    config.log("Removing the following...");
+    config.log(repo);
+
+    $scope.working.git.repositories.splice(
+      $scope.working.git.repositories.indexOf(alert),
+      1
+    );
+  };
+
+  $scope.clearGitRepository = function(repo) {
+    var prefix = repo.serverPrefix;
+    var data = { serverPrefix: prefix };
+
+    config.log("POSTing the following to " + config.clearGitRepositoryURI());
+    config.log(data);
+
+    $http({
+      url: config.clearGitRepositoryURI(),
+      method: 'POST',
+      data: data,
+      headers: {'Content-type': 'application/json'}
+    })
+    .success(function(data, status, headers, conf) {
+      config.log(data);
+      $scope.addAlert(true, prefix + " has been cleared successfully", 10 * 1000);
+    })
+    .error(function(data, status, headers, conf) {
+      config.log(data);
+      $scope.addAlert(false, prefix + " was unable to be cleared successfully: " + data.message, 10 * 1000);
+    });
+  };
 
   $scope.refreshSettings = function(callback) {
     return $http({ method: 'GET', url: config.adminSettingsURI() }).success(function(data) {
       config.log(data);
 
-      $scope.settings = data;
-      $scope.rootDirectory = data.rootDirectory;
+      $scope.original = data;
+      $scope.working = angular.copy(data);
     }).then(function(data) {
       if (callback != null) {
         callback($scope);
@@ -47,101 +143,29 @@ getter_io.controller('AdminController', ['$scope', '$http', '$timeout', function
     });
   }
 
+  $scope.saveSettings = function() {
+    config.log("POSTing the following...");
+    config.log($scope.working);
+    $http({
+      url: config.adminSettingsURI(),
+      method: 'POST',
+      data: $scope.working,
+      headers: {'Content-type': 'application/json'}
+    })
+    .success(function(data, status, headers, conf) {
+      config.log(data);
+      $scope.original = angular.copy($scope.working);
+      $scope.addAlert(true, "Settings saved successfully", 10 * 1000);
+    })
+    .error(function(data, status, headers, conf) {
+        config.log(data);
+        $scope.addAlert(false, "Unable to save successfully: " + data.message, 10 * 1000);
+    });
+  };
+
   $scope.run = function() {
     $scope.refreshSettings(null);
   };
 
   $scope.run();
 }]);
-
-
-function AlertDemoCtrl($scope) {
-    $scope.alerts = [
-        { type: 'error', msg: 'Oh snap! Change a few things up and try submitting again.' },
-        { type: 'success', msg: 'Well done! You successfully read this important alert message.' }
-    ];
-
-    $scope.addAlert = function() {
-        $scope.alerts.push({msg: "Another alert!"});
-    };
-
-    $scope.closeAlert = function(index) {
-        $scope.alerts.splice(index, 1);
-    };
-
-}
-
-function AccordionDemoCtrl($scope) {
-    $scope.oneAtATime = true;
-
-    $scope.groups = [
-        {
-            title: "Dynamic Group Header - 1",
-            content: "Dynamic Group Body - 1"
-        },
-        {
-            title: "Dynamic Group Header - 2",
-            content: "Dynamic Group Body - 2"
-        }
-    ];
-
-    $scope.items = ['Item 1', 'Item 2', 'Item 3'];
-
-    $scope.addItem = function() {
-        var newItemNo = $scope.items.length + 1;
-        $scope.items.push('Item ' + newItemNo);
-    };
-}
-
-var ButtonsCtrl = function ($scope) {
-
-    $scope.singleModel = 1;
-
-    $scope.radioModel = 'Middle';
-
-    $scope.checkModel = {
-        left: false,
-        middle: true,
-        right: false
-    };
-};
-
-var ModalDemoCtrl = function ($scope, $modal, $log) {
-
-    $scope.items = ['item1', 'item2', 'item3'];
-
-    $scope.open = function () {
-
-        var modalInstance = $modal.open({
-            templateUrl: 'myModalContent.html',
-            controller: ModalInstanceCtrl,
-            resolve: {
-                items: function () {
-                    return $scope.items;
-                }
-            }
-        });
-
-        modalInstance.result.then(function (selectedItem) {
-            $scope.selected = selectedItem;
-        }, function () {
-            $log.info('Modal dismissed at: ' + new Date());
-        });
-    };
-};
-
-var ModalInstanceCtrl = function ($scope, $modalInstance, items) {
-
-    $scope.items = items;
-    $scope.selected = {
-        item: $scope.items[0]
-    };
-
-    $scope.ok = function () {
-        $modalInstance.close($scope.selected.item);
-    };
-
-    $scope.cancel = function () {
-        $modalInstance.dismiss('cancel');
-    };
-};

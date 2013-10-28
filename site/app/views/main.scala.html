@@ -1,4 +1,4 @@
-@(title: String)(content: Html)
+@(title: String)(banner: Html)(content: Html)
 
 <!DOCTYPE html>
 
@@ -21,12 +21,21 @@
     <link rel="shortcut icon" type="image/png" href="@routes.Assets.at("images/favicon.png")">
   </head>
   <body>
-    <div class="banner">
-      getter.io
-    </div>
+    <div ng-controller="AppController">
+      <div class="banner">
+        <div class="navbar">
+          <div class="navbar-inner">
+            <div class="container">
+              <a class="brand" href="/">getter.io</a>
+              @banner
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <div class="content">
-      @content
+      <div class="content">
+        @content
+      </div>
     </div>
   </body>
 </html>
