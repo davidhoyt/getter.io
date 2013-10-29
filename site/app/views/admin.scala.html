@@ -30,8 +30,8 @@
             </td>
             <td width="100%" align="right" style="vertical-align: middle;">
               <div style="position: relative; float: right; padding-right: 20px;">
-                <button class="btn btn-small btn-info" ng-click="updateGitRepository(repo)">Update Now</button>
-                <button class="btn btn-small btn-info" ng-click="clearGitRepository(repo)">Clear</button>
+                <button class="btn btn-small btn-info" ng-show="repo.id != ''" ng-click="updateGitRepository(repo)">Update Now</button>
+                <button class="btn btn-small btn-info" ng-show="repo.id != ''" ng-click="clearGitRepository(repo)">Clear</button>
                 <button class="btn btn-small btn-danger" ng-click="deleteGitRepository(repo)">Delete</button>
               </div>
 
@@ -40,8 +40,10 @@
         </table>
       </tab>
       <tab heading="Server">
-        <label>Root directory:</label>
+        <label>Content directory:</label>
         <input type="text" ng-model="working.contentDir" />
+        <label>Path to git executable:</label>
+        <input type="text" ng-model="working.git.pathToExecutable" />
       </tab>
     </tabset>
   </div>

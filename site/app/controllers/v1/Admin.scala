@@ -35,8 +35,8 @@ object Admin extends Controller {
       } else if ((x.git ne null) && x.git.repositories.exists(r => r.serverPrefix == "" || r.cloneURL == "")) {
         BadRequest(Json.toJson(Result(success = false, message = s"Missing the server prefix or clone URL")))
       } else {
-        Global.saveAdminSettings(x)
-        Ok(Json.toJson(Result(success = true)))
+        val updated_with_ids = Global.saveAdminSettings(x)
+        Ok(Json.toJson(updated_with_ids))
       }
     }.recoverTotal { e =>
       BadRequest(Json.toJson(Result(success = false, message = s"Invalid JSON payload")))
@@ -45,10 +45,10 @@ object Admin extends Controller {
 
   def update = Action(parse.json) { request =>
     request.body.validate[Update].map { case x =>
-      if (Global.updatePrefix(x.serverPrefix))
+      if (Global.updateGitRepository(x.id))
         Ok(Json.toJson(Result(success = true)))
       else
-        BadRequest(Json.toJson(Result(success = false, message = s"Unable to locate the requested repository. Have you saved your changes?")))
+        BadRequest(Json.toJson(Result(success = false, message = s"Unable to update the requested repository. Is the clone URL correct?")))
     }.recoverTotal { e =>
       BadRequest(Json.toJson(Result(success = false, message = s"Invalid JSON payload")))
     }
@@ -56,7 +56,7 @@ object Admin extends Controller {
 
   def clear = Action(parse.json) { request =>
     request.body.validate[Clear].map { case x =>
-      if (Global.clearPrefix(x.serverPrefix))
+      if (Global.clearGitRepository(x.id))
         Ok(Json.toJson(Result(success = true)))
       else
         BadRequest(Json.toJson(Result(success = false, message = s"Unable to locate the requested repository. Have you saved your changes?")))

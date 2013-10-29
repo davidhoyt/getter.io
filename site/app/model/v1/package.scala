@@ -7,6 +7,7 @@ import play.api.mvc._
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Writes._
+import java.util.UUID
 
 package object v1 {
   implicit val gitRepositoryReads = Json.reads[GitRepository]
@@ -28,11 +29,11 @@ package object v1 {
   implicit val resultWrites = Json.writes[Result]
 
   case class Admin(contentDir: String = "", git: Git = Git())
-  case class Git(repositories: Seq[GitRepository] = Seq())
-  case class GitRepository(serverPrefix: String, cloneURL: String)
+  case class Git(pathToExecutable: String = "git", repositories: Seq[GitRepository] = Seq())
+  case class GitRepository(serverPrefix: String, cloneURL: String, id: String = UUID.randomUUID().toString)
 
-  case class Clear(serverPrefix: String)
-  case class Update(serverPrefix: String)
+  case class Clear(id: String)
+  case class Update(id: String)
 
   case class Result(success: Boolean, message: String = "")
 

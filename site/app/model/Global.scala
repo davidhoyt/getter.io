@@ -1,20 +1,25 @@
 package model
 
+import scala.util._
+import scala.sys.process._
+import scala.collection.mutable
+import scalax.io.{Resource, Codec}
+
 import play.api._
 import play.api.libs.json._
-import scala.util._
-import scalax.io.{Resource, Codec}
+
 import java.io.{File, PrintWriter}
 import java.nio.file.{LinkOption, Paths, Path}
-import scala.collection.mutable
-
-//import scalax.io.JavaConverters._
+import java.util.UUID
 
 object Global extends GlobalSettings {
   import model.v1._
 
   def defaultContentDir =
     Play.current.configuration.getString("content.dir").get
+
+  def defaultPathToGitExecutable =
+    Play.current.configuration.getString("path.to.git").get
 
   def adminSettingsFile =
     Play.current.configuration.getString("admin.settings.file").get
@@ -30,15 +35,15 @@ object Global extends GlobalSettings {
           Failure(throw new IllegalArgumentException("Unable to parse admin settings"))
         }
       } else {
-        Success(Admin(contentDir = defaultContentDir))
+        Success(Admin(contentDir = defaultContentDir, git = Git(pathToExecutable = defaultPathToGitExecutable)))
       }
     } catch {
       case t: Throwable =>
-        Success(Admin(contentDir = defaultContentDir))
+        Success(Admin(contentDir = defaultContentDir, git = Git(pathToExecutable = defaultPathToGitExecutable)))
     }
   }
 
-  def saveAdminSettings(admin: Admin): Boolean = {
+  def saveAdminSettings(admin: Admin): Admin = {
     val original = retrieveAdminSettings().get
 
     if (original.contentDir != admin.contentDir) {
@@ -47,19 +52,28 @@ object Global extends GlobalSettings {
 
     //Are there any missing git repositories?
     //If so, remove them.
-    val diff = original.git.repositories.map(_.serverPrefix).diff(admin.git.repositories.map(_.serverPrefix))
-    println(s"DIFF $diff")
-    for(prefix <- diff) {
-      deletePrefix(prefix)
+    val diff = original.git.repositories.map(_.id).diff(admin.git.repositories.map(_.id))
+    for(id <- diff) {
+      deleteGitRepository(id)
     }
 
+    //Generate new IDs if necessary.
+    val updated_repos =
+      for (r <- admin.git.repositories) yield {
+        if ("" == r.id)
+          r.copy(id = UUID.randomUUID().toString)
+        else
+          r
+      }
 
-    val output = Json.prettyPrint(Json.toJson(admin))
+    val updated_admin = admin.copy(git = admin.git.copy(repositories = updated_repos))
+
+    val output = Json.prettyPrint(Json.toJson(updated_admin))
     val f = new PrintWriter(new File(adminSettingsFile))
     try f.write(output)
     finally f.close()
 
-    true
+    updated_admin
   }
 
   def deleteAll(parent: File): Boolean = {
@@ -89,37 +103,50 @@ object Global extends GlobalSettings {
     true
   }
 
-  def rootGitRepositoryForPrefix(prefix: String): Option[File] = {
+  def rootGitRepositoryForID(id: String)(ifDoesntExist: (Admin, GitRepository, File) => Boolean = null): Option[(Admin, File)] = {
     //Find associated git repo.
     val admin = retrieveAdminSettings().get
-    admin.git.repositories.find(_.serverPrefix == prefix).fold[Option[File]](None) { _ =>
-      val path_to_repo = Paths.get(admin.contentDir, if ("/" == prefix) "ROOT" else "OTHER", prefix).toAbsolutePath.toFile
-      if (!path_to_repo.exists())
+    admin.git.repositories.find(_.id == id).fold[Option[(Admin, File)]](None) { repo =>
+      val path_to_repo = Paths.get(admin.contentDir, id).toAbsolutePath.toFile
+      if (!path_to_repo.exists()) {
         path_to_repo.mkdirs()
-
-      println(path_to_repo)
-      Some(path_to_repo)
+        if (ifDoesntExist ne null)
+          if (!ifDoesntExist(admin, repo, path_to_repo)) {
+            //If the callback doesn't succeed, then clear out the directory we just created.
+            deleteAll(path_to_repo)
+            return None
+          }
+      }
+      Some((admin, path_to_repo))
     }
   }
 
-  def updatePrefix(prefix: String): Boolean = {
-    rootGitRepositoryForPrefix(prefix).fold(false) { path =>
-      println(s"Updating $path")
+  def gitClone(settings: Admin, repo: GitRepository, path: File): Boolean = {
+    import scala.sys.process._
+
+    val git = Seq(settings.git.pathToExecutable, "clone", repo.cloneURL)
+    val d = git run ProcessLogger(Logger.info(_))
+    d.exitValue() == 0
+  }
+
+  def updateGitRepository(id: String): Boolean = {
+    rootGitRepositoryForID(id)(gitClone).fold(false) { case (settings, path) =>
+      Logger.info(s"Updating $path")
       true
     }
   }
 
-  def clearPrefix(prefix: String): Boolean = {
-    rootGitRepositoryForPrefix(prefix).fold(false) { path =>
-      println(s"Clearing $path")
+  def clearGitRepository(id: String): Boolean = {
+    rootGitRepositoryForID(id)(null).fold(false) { case (settings, path) =>
+      Logger.info(s"Clearing $path")
       deleteAll(path)
     }
   }
 
-  def deletePrefix(prefix: String): Boolean = {
-    println(s"Attempting to delete $prefix")
-    rootGitRepositoryForPrefix(prefix).fold(false) { path =>
-      println(s"Deleting $path")
+  def deleteGitRepository(id: String): Boolean = {
+    println(s"Attempting to delete $id")
+    rootGitRepositoryForID(id)(null).fold(false) { case (settings, path) =>
+      Logger.info(s"Deleting $path")
       deleteAll(path)
     }
   }

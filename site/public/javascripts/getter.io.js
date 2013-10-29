@@ -21,6 +21,8 @@ var config = {
 
 var getter_io = angular.module('getter-io', ['ui.bootstrap']);
 
+
+
 getter_io.controller('AppController', ['$scope', '$http', '$timeout', function($scope, $http, $timeout) {
 
 }]);
@@ -29,8 +31,9 @@ getter_io.controller('AdminController', ['$scope', '$http', '$timeout', function
   $scope.alerts = [];
 
   $scope.original = $scope.working = {
-    rootDirectory: '',
+    contentDir: '',
     git: {
+      pathToExecutable: '',
       repositories: []
     }
   };
@@ -65,6 +68,7 @@ getter_io.controller('AdminController', ['$scope', '$http', '$timeout', function
 
   $scope.createEmptyGitRepositoryInstance = function() {
     return {
+      id: '',
       serverPrefix: '/',
       cloneURL: ''
     };
@@ -75,8 +79,8 @@ getter_io.controller('AdminController', ['$scope', '$http', '$timeout', function
   };
 
   $scope.updateGitRepository = function(repo) {
-    var prefix = repo.serverPrefix;
-    var data = { serverPrefix: prefix };
+    var id = repo.id;
+    var data = { id: id };
 
     config.log("POSTing the following to " + config.updateGitRepositoryURI());
     config.log(data);
@@ -89,11 +93,11 @@ getter_io.controller('AdminController', ['$scope', '$http', '$timeout', function
     })
     .success(function(data, status, headers, conf) {
       config.log(data);
-      $scope.addAlert(true, prefix + " has been updated successfully", 10 * 1000);
+      $scope.addAlert(true, repo.serverPrefix + " has been updated successfully", 10 * 1000);
     })
     .error(function(data, status, headers, conf) {
       config.log(data);
-      $scope.addAlert(false, prefix + " was unable to be updated successfully: " + data.message, 10 * 1000);
+      $scope.addAlert(false, "Error updating \"" + repo.serverPrefix + "\": " + data.message, 10 * 1000);
     });
   };
 
@@ -108,8 +112,8 @@ getter_io.controller('AdminController', ['$scope', '$http', '$timeout', function
   };
 
   $scope.clearGitRepository = function(repo) {
-    var prefix = repo.serverPrefix;
-    var data = { serverPrefix: prefix };
+    var id = repo.id;
+    var data = { id: id };
 
     config.log("POSTing the following to " + config.clearGitRepositoryURI());
     config.log(data);
@@ -122,11 +126,11 @@ getter_io.controller('AdminController', ['$scope', '$http', '$timeout', function
     })
     .success(function(data, status, headers, conf) {
       config.log(data);
-      $scope.addAlert(true, prefix + " has been cleared successfully", 10 * 1000);
+      $scope.addAlert(true, repo.serverPrefix + " has been cleared successfully", 10 * 1000);
     })
     .error(function(data, status, headers, conf) {
       config.log(data);
-      $scope.addAlert(false, prefix + " was unable to be cleared successfully: " + data.message, 10 * 1000);
+      $scope.addAlert(false, "Error clearing \"" + repo.serverPrefix + "\": " + data.message, 10 * 1000);
     });
   };
 
@@ -144,7 +148,7 @@ getter_io.controller('AdminController', ['$scope', '$http', '$timeout', function
   }
 
   $scope.saveSettings = function() {
-    config.log("POSTing the following...");
+    config.log("POSTing the following to " + config.adminSettingsURI());
     config.log($scope.working);
     $http({
       url: config.adminSettingsURI(),
@@ -153,8 +157,11 @@ getter_io.controller('AdminController', ['$scope', '$http', '$timeout', function
       headers: {'Content-type': 'application/json'}
     })
     .success(function(data, status, headers, conf) {
+      //A new copy of the data is returned that includes any updated IDs.
+      config.log("Received the following...")
       config.log(data);
-      $scope.original = angular.copy($scope.working);
+      $scope.original = data;
+      $scope.working = angular.copy(data);
       $scope.addAlert(true, "Settings saved successfully", 10 * 1000);
     })
     .error(function(data, status, headers, conf) {
