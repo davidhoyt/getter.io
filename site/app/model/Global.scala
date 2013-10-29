@@ -103,10 +103,10 @@ object Global extends GlobalSettings {
     true
   }
 
-  def rootGitRepositoryForID(id: String)(ifDoesntExist: (Admin, GitRepository, File) => Boolean = null): Option[(Admin, File)] = {
+  def rootGitRepositoryForID(id: String)(ifDoesntExist: (Admin, GitRepository, File) => Boolean = null): Option[(Admin, GitRepository, File)] = {
     //Find associated git repo.
     val admin = retrieveAdminSettings().get
-    admin.git.repositories.find(_.id == id).fold[Option[(Admin, File)]](None) { repo =>
+    admin.git.repositories.find(_.id == id).fold[Option[(Admin, GitRepository, File)]](None) { repo =>
       val path_to_repo = Paths.get(admin.contentDir, id).toAbsolutePath.toFile
       if (!path_to_repo.exists()) {
         path_to_repo.mkdirs()
@@ -117,27 +117,39 @@ object Global extends GlobalSettings {
             return None
           }
       }
-      Some((admin, path_to_repo))
+      Some((admin, repo, path_to_repo))
     }
   }
 
   def gitClone(settings: Admin, repo: GitRepository, path: File): Boolean = {
     import scala.sys.process._
 
-    val git = Seq(settings.git.pathToExecutable, "clone", repo.cloneURL)
-    val d = git run ProcessLogger(Logger.info(_))
-    d.exitValue() == 0
+    val git = Seq(settings.git.pathToExecutable, "clone", repo.cloneURL, ".")
+    Logger.info(s"Running $git in $path")
+
+    val proc = Process(git, path) run ProcessLogger(Logger.info(_))
+    proc.exitValue() == 0
+  }
+
+  def gitPull(settings: Admin, repo: GitRepository, path: File): Boolean = {
+    import scala.sys.process._
+
+    val git = Seq(settings.git.pathToExecutable, "pull", "--rebase")
+    Logger.info(s"Running $git in $path")
+
+    val proc = Process(git, path) run ProcessLogger(Logger.info(_))
+    proc.exitValue() == 0
   }
 
   def updateGitRepository(id: String): Boolean = {
-    rootGitRepositoryForID(id)(gitClone).fold(false) { case (settings, path) =>
+    rootGitRepositoryForID(id)(gitClone).fold(false) { case (settings, repo, path) =>
       Logger.info(s"Updating $path")
       true
     }
   }
 
   def clearGitRepository(id: String): Boolean = {
-    rootGitRepositoryForID(id)(null).fold(false) { case (settings, path) =>
+    rootGitRepositoryForID(id)(null).fold(false) { case (settings, repo, path) =>
       Logger.info(s"Clearing $path")
       deleteAll(path)
     }
@@ -145,7 +157,7 @@ object Global extends GlobalSettings {
 
   def deleteGitRepository(id: String): Boolean = {
     println(s"Attempting to delete $id")
-    rootGitRepositoryForID(id)(null).fold(false) { case (settings, path) =>
+    rootGitRepositoryForID(id)(null).fold(false) { case (settings, repo, path) =>
       Logger.info(s"Deleting $path")
       deleteAll(path)
     }
