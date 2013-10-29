@@ -28,9 +28,9 @@ package object v1 {
   implicit val resultReads = Json.reads[Result]
   implicit val resultWrites = Json.writes[Result]
 
-  case class Admin(contentDir: String = "", routeForDefault: String = "/", git: Git = Git())
+  case class Admin(contentDir: String = "", git: Git = Git())
   case class Git(pathToExecutable: String = "git", repositories: Seq[GitRepository] = Seq())
-  case class GitRepository(serverPrefix: String, cloneURL: String, branch: String = "master", id: String = UUID.randomUUID().toString)
+  case class GitRepository(routeDefaultTo: String, serverPrefix: String, cloneURL: String, branch: String = "master", id: String = UUID.randomUUID().toString)
 
   case class Clear(id: String)
   case class Update(id: String)

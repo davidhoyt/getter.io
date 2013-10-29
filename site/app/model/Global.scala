@@ -114,20 +114,19 @@ object Global extends GlobalSettings {
 
   def findFileForResource(resource: String): Option[File] = {
 
+    //Logger.info(s"Attempting to locate $resource")
 
     retrieveAdminSettings() match {
       case Success(settings) =>
         val cleaned0 = resource.trim
-
-        //Check for the default resource and use that.
-        val cleaned1 =
-          if (cleaned0 == "" || cleaned0 == "/" && settings.routeForDefault != "")
-            settings.routeForDefault
-          else
-            cleaned0
-        val cleaned = cleaned1.replaceAllLiterally("\\", "/")
+        val cleaned = cleaned0.replaceAllLiterally("\\", "/")
         val index_of_first_slash =
           cleaned.indexOf("/")
+        val cleaned_with_slash =
+          if (index_of_first_slash == 0)
+            cleaned
+          else
+            "/" + cleaned
         val first_part =
           if (index_of_first_slash >= 0)
             "/" + cleaned.substring(0, index_of_first_slash)
@@ -136,17 +135,31 @@ object Global extends GlobalSettings {
 
         //Attempt to find something that has a matching prefix first.
         for {
-          r <- settings.git.repositories if r.serverPrefix == first_part
-          f = Paths.get(settings.contentDir, r.id, cleaned).toFile if f.exists() && f.isFile
+          r <- settings.git.repositories if r.serverPrefix == first_part && r.serverPrefix.length <= cleaned.length
+          f = Paths.get(settings.contentDir, r.id, cleaned.substring(r.serverPrefix.length)).toFile if f.exists() && f.isFile
         } return Some(f)
 
         //If that can't be found, look at all the others and find the first matching one.
         for {
-          r <- settings.git.repositories if r.serverPrefix != first_part
+          r <- settings.git.repositories if r.serverPrefix != first_part && r.serverPrefix.length <= cleaned.length
+          f = Paths.get(settings.contentDir, r.id, cleaned.substring(r.serverPrefix.length)).toFile if f.exists() && f.isFile
+        } return Some(f)
+
+        //Look for a file that just matches the resource period.
+        for {
+          r <- settings.git.repositories
           f = Paths.get(settings.contentDir, r.id, cleaned).toFile if f.exists() && f.isFile
         } return Some(f)
 
         //Unable to find a matching resource.
+
+        //Perhaps there's a matching default?
+        for {
+          r <- settings.git.repositories if r.serverPrefix == cleaned_with_slash
+          f = Paths.get(settings.contentDir, r.id, r.routeDefaultTo).toFile if f.exists() && f.isFile
+        } return Some(f)
+
+        //Definitely couldn't find anything.
         None
       case Failure(_) =>
         None

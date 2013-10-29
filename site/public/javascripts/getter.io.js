@@ -70,6 +70,7 @@ getter_io.controller('AdminController', ['$scope', '$http', '$timeout', function
   $scope.createEmptyGitRepositoryInstance = function() {
     return {
       id: '',
+      routeDefaultTo: '',
       serverPrefix: '/',
       cloneURL: '',
       branch: 'master'

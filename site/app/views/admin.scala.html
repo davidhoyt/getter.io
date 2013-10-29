@@ -16,19 +16,23 @@
       <tab heading="Git Repositories">
         <button class="btn btn-small" ng-click="addRepository()">Add Another Repository</button>
         <br /><br />
-        <table class="table table-striped">
+        <table class="table table-striped" ui:sortable ng:model="working.git.repositories">
           <tr ng-repeat="repo in working.git.repositories">
             <td>
               <label>Server path:</label>
               <input type="text" style="width: 100px;" ng-model="repo.serverPrefix" />
             </td>
             <td>
+              <label>Route {{ repo.serverPrefix }} to:</label>
+              <input type="text" style="width: 150px;" ng-model="repo.routeDefaultTo" />
+            </td>
+            <td>
               <label>Git clone URL:</label>
-              <input type="text" ng-model="repo.cloneURL" />
+              <input type="text" style="width: 400px;" ng-model="repo.cloneURL" />
             </td>
             <td>
               <label>Git branch:</label>
-              <input type="text" ng-model="repo.branch" />
+              <input type="text" style="width: 150px;" ng-model="repo.branch" />
             </td>
             <td width="100%" align="right" style="vertical-align: middle;">
               <div style="position: relative; float: right; padding-right: 20px;">
@@ -41,8 +45,6 @@
         </table>
       </tab>
       <tab heading="Server">
-        <label>Route requests for &quot;/&quot; to:</label>
-        <input type="text" ng-model="working.routeForDefault" />
         <label>Content directory:</label>
         <input type="text" ng-model="working.contentDir" />
         <label>Path to git executable:</label>
