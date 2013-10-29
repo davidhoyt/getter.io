@@ -28,13 +28,16 @@
               <label>Git clone URL:</label>
               <input type="text" ng-model="repo.cloneURL" />
             </td>
+            <td>
+              <label>Git branch:</label>
+              <input type="text" ng-model="repo.branch" />
+            </td>
             <td width="100%" align="right" style="vertical-align: middle;">
               <div style="position: relative; float: right; padding-right: 20px;">
                 <button class="btn btn-small btn-info" ng-show="repo.id != ''" ng-click="updateGitRepository(repo)">Update Now</button>
                 <button class="btn btn-small btn-info" ng-show="repo.id != ''" ng-click="clearGitRepository(repo)">Clear</button>
                 <button class="btn btn-small btn-danger" ng-click="deleteGitRepository(repo)">Delete</button>
               </div>
-
             </td>
           </tr>
         </table>

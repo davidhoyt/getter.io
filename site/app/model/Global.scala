@@ -124,27 +124,31 @@ object Global extends GlobalSettings {
   def gitClone(settings: Admin, repo: GitRepository, path: File): Boolean = {
     import scala.sys.process._
 
-    val git = Seq(settings.git.pathToExecutable, "clone", repo.cloneURL, ".")
-    Logger.info(s"Running $git in $path")
+    val git = Seq(settings.git.pathToExecutable, "clone", "--depth", "1", "--branch", repo.branch, repo.cloneURL, ".")
+    val p = Process(git, path)
 
-    val proc = Process(git, path) run ProcessLogger(Logger.info(_))
+    Logger.info(s"Running $p in $path")
+
+    val proc = p run ProcessLogger(Logger.info(_))
     proc.exitValue() == 0
   }
 
   def gitPull(settings: Admin, repo: GitRepository, path: File): Boolean = {
     import scala.sys.process._
 
-    val git = Seq(settings.git.pathToExecutable, "pull", "--rebase")
-    Logger.info(s"Running $git in $path")
+    val git = Seq(settings.git.pathToExecutable, "pull", "--rebase", "--ff-only")
+    val p = Process(git, path)
 
-    val proc = Process(git, path) run ProcessLogger(Logger.info(_))
+    Logger.info(s"Running $p in $path")
+
+    val proc = p run ProcessLogger(Logger.info(_))
     proc.exitValue() == 0
   }
 
   def updateGitRepository(id: String): Boolean = {
     rootGitRepositoryForID(id)(gitClone).fold(false) { case (settings, repo, path) =>
       Logger.info(s"Updating $path")
-      true
+      gitPull(settings, repo, path)
     }
   }
 

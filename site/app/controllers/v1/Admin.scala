@@ -32,8 +32,8 @@ object Admin extends Controller {
     request.body.validate[Admin].map { case x =>
       if (x.contentDir.length <= 0) {
         BadRequest(Json.toJson(Result(success = false, message = s"Cannot have an empty content directory")))
-      } else if ((x.git ne null) && x.git.repositories.exists(r => r.serverPrefix == "" || r.cloneURL == "")) {
-        BadRequest(Json.toJson(Result(success = false, message = s"Missing the server prefix or clone URL")))
+      } else if ((x.git ne null) && x.git.repositories.exists(r => r.serverPrefix == "" || r.cloneURL == "" || r.branch == "")) {
+        BadRequest(Json.toJson(Result(success = false, message = s"Missing the server prefix, clone URL, or branch")))
       } else {
         val updated_with_ids = Global.saveAdminSettings(x)
         Ok(Json.toJson(updated_with_ids))

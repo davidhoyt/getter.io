@@ -70,7 +70,8 @@ getter_io.controller('AdminController', ['$scope', '$http', '$timeout', function
     return {
       id: '',
       serverPrefix: '/',
-      cloneURL: ''
+      cloneURL: '',
+      branch: 'master'
     };
   };
 
