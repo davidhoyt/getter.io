@@ -3,14 +3,16 @@
 # ~~~~
 
 # Home page
-GET        /                        controllers.Application.index
 
-GET        /admin                   controllers.v1.Admin.index
-GET        /admin/v1/settings       controllers.v1.Admin.requestSettings
-POST       /admin/v1/settings       controllers.v1.Admin.saveSettings()
-POST       /admin/v1/update         controllers.v1.Admin.update()
-POST       /admin/v1/clear          controllers.v1.Admin.clear()
+GET         /admin                    controllers.v1.Admin.index
+GET         /admin/v1/settings        controllers.v1.Admin.requestSettings
+POST        /admin/v1/settings        controllers.v1.Admin.saveSettings()
+POST        /admin/v1/update          controllers.v1.Admin.update()
+POST        /admin/v1/clear           controllers.v1.Admin.clear()
 
 # Map static resources from the /public folder to the /assets URL path
-GET        /assets/*file            controllers.Assets.at(path="/public", file)
-GET        /webjars/*file           controllers.WebJarAssets.at(file)
+GET         /assets/*file             controllers.Assets.at(path="/public", file)
+GET         /webjars/*file            controllers.WebJarAssets.at(file)
+
+GET         /*file                    controllers.Application.serveFile(file)
+GET         /                         controllers.Application.serveFile(file="")

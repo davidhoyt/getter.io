@@ -1,8 +1,6 @@
 @()
 
-@main("getter.io") {
-
-} {
+@main(showBanner = true) {
   <div ng-controller="AdminController">
     <alert ng-repeat="alert in alerts" type="alert.type" close="closeAlert($index)" class="alert fade in">{{alert.msg}}</alert>
     <div style="position: relative; float: right; padding-right: 20px;">
@@ -22,7 +20,7 @@
           <tr ng-repeat="repo in working.git.repositories">
             <td>
               <label>Server path:</label>
-              <input type="text" ng-model="repo.serverPrefix" />
+              <input type="text" style="width: 100px;" ng-model="repo.serverPrefix" />
             </td>
             <td>
               <label>Git clone URL:</label>
@@ -43,6 +41,8 @@
         </table>
       </tab>
       <tab heading="Server">
+        <label>Route requests for &quot;/&quot; to:</label>
+        <input type="text" ng-model="working.routeForDefault" />
         <label>Content directory:</label>
         <input type="text" ng-model="working.contentDir" />
         <label>Path to git executable:</label>

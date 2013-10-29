@@ -32,6 +32,7 @@ getter_io.controller('AdminController', ['$scope', '$http', '$timeout', function
 
   $scope.original = $scope.working = {
     contentDir: '',
+    routeForDefault: '',
     git: {
       pathToExecutable: '',
       repositories: []

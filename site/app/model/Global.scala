@@ -60,10 +60,19 @@ object Global extends GlobalSettings {
     //Generate new IDs if necessary.
     val updated_repos =
       for (r <- admin.git.repositories) yield {
-        if ("" == r.id)
-          r.copy(id = UUID.randomUUID().toString)
-        else
-          r
+        val id =
+          if ("" == r.id)
+            UUID.randomUUID().toString
+          else
+            r.id
+        val trimmed = r.serverPrefix.trim
+        val cleaned0 =
+          if (trimmed.startsWith("/") || trimmed.startsWith("\\"))
+            trimmed
+          else
+            "/" + trimmed
+        val cleaned = cleaned0.replaceAllLiterally("\\", "/")
+        r.copy(serverPrefix = cleaned, id = id)
       }
 
     val updated_admin = admin.copy(git = admin.git.copy(repositories = updated_repos))
@@ -101,6 +110,47 @@ object Global extends GlobalSettings {
         return false
 
     true
+  }
+
+  def findFileForResource(resource: String): Option[File] = {
+
+
+    retrieveAdminSettings() match {
+      case Success(settings) =>
+        val cleaned0 = resource.trim
+
+        //Check for the default resource and use that.
+        val cleaned1 =
+          if (cleaned0 == "" || cleaned0 == "/" && settings.routeForDefault != "")
+            settings.routeForDefault
+          else
+            cleaned0
+        val cleaned = cleaned1.replaceAllLiterally("\\", "/")
+        val index_of_first_slash =
+          cleaned.indexOf("/")
+        val first_part =
+          if (index_of_first_slash >= 0)
+            "/" + cleaned.substring(0, index_of_first_slash)
+          else
+            "/"
+
+        //Attempt to find something that has a matching prefix first.
+        for {
+          r <- settings.git.repositories if r.serverPrefix == first_part
+          f = Paths.get(settings.contentDir, r.id, cleaned).toFile if f.exists() && f.isFile
+        } return Some(f)
+
+        //If that can't be found, look at all the others and find the first matching one.
+        for {
+          r <- settings.git.repositories if r.serverPrefix != first_part
+          f = Paths.get(settings.contentDir, r.id, cleaned).toFile if f.exists() && f.isFile
+        } return Some(f)
+
+        //Unable to find a matching resource.
+        None
+      case Failure(_) =>
+        None
+    }
   }
 
   def rootGitRepositoryForID(id: String)(ifDoesntExist: (Admin, GitRepository, File) => Boolean = null): Option[(Admin, GitRepository, File)] = {
